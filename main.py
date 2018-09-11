@@ -12,7 +12,7 @@ import torchvision.utils as vutils
 
 from data import *
 from models import *
-from util import *
+#from util import *
 import time
 
 
@@ -29,10 +29,10 @@ def adjust_learning_rate(optimizer, epoch):
         param_group['lr'] = lr
 
 
-generator = Generator()
+generator = Generator(16, 6, tag_num )
 generator.apply(weights_init)
 
-discriminator = Discriminator()
+discriminator = Discriminator(tag_num)
 discriminator.apply(weights_init)
 
 opt_g = torch.optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
@@ -44,10 +44,10 @@ if resume_file:
         checkpoint = torch.load(resume_file)
         start_epoch = checkpoint['epoch']
         best_loss = checkpoint['loss_g'] + checkpoint['loss_d']
-        generator.load_state_dict(checkpoint['g_state_dict'])
-        discriminator.load_state_dict(checkpoint['d_state_dict'])
-        opt_g.load_state_dict(checkpoint['g_optimizer'])
-        opt_d.load_state_dict(checkpoint['d_optimizer'])
+        generator = checkpoint['g_state_dict']
+        discriminator = checkpoint['d_state_dict']
+        opt_g = checkpoint['g_optimizer']
+        opt_d = checkpoint['d_optimizer']
         print("=> loaded checkpoint '{}' (epoch {})"
               .format(resume_file, checkpoint['epoch']))
     else:
@@ -146,11 +146,9 @@ for epoch in range(start_epoch, max_epochs):
                  loss_g_tag.data[0]))
 
         if batch_idx % 100 == 0:
-            vutils.save_image(data,
-                    'samples/real_samples.png')
+            vutils.save_image(data, 'samples/real_samples.png')
             fake = generator(rep)
-            vutils.save_image(fake.data.view(batch_size, 3, imsize, imsize),
-                    'samples/fake_samples_epoch_%03d.png' % epoch)
+            vutils.save_image(fake.data.view(batch_size, 3, imsize, imsize), 'samples/fake_samples_epoch_%03d.png' % epoch)
 
             is_best = False
 
@@ -163,10 +161,10 @@ for epoch in range(start_epoch, max_epochs):
             save_checkpoint({
                 'epoch': epoch,
                 'arch': 'ACGAN-SRResNet-DRAGAN',
-                'g_state_dict': generator.state_dict(),
-                'd_state_dict': discriminator.state_dict(),
+                'g_state_dict': generator,
+                'd_state_dict': discriminator,
                 'loss_g': loss_g.data[0],
                 'loss_d': loss_d.data[0],
-                'g_optimizer' : opt_g.state_dict(),
-                'd_optimizer' : opt_d.state_dict(),
+                'g_optimizer' : opt_g,
+                'd_optimizer' : opt_d,
             }, is_best, 'models/Epoch: %03d.pt' % (epoch))
